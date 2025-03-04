@@ -36,9 +36,6 @@ class MCQQuestion(BaseModel):
     options: List[Option]
     answer: Optional[str] = None  # Optional field for the correct answer
 
-# class ExtractionResponse(BaseModel):
-#     questions: List[MCQQuestion]
-
 # Dump the JSON schema from the model and include it in the prompt
 json_schema = json.dumps(MCQQuestion.model_json_schema())
 
@@ -50,10 +47,10 @@ client = OpenAI(
 
 # Define the prompt including the JSON schema of the expected output
 prompt = (
-    "Extract multiple-choice questions from the given text. "
-    "For each question, output a JSON object that conforms to the following JSON schema:\n"
+    "Extract ONE multiple-choice question from the given text. "
+    "For the question, output a JSON object that conforms to the following JSON schema:\n"
     f"{json_schema}\n"
-    "Ensure that the output is valid JSON and includes a top-level 'questions' key. your job is to extract the question and give structured output successfully. Do not attepmt to answer the question. give the valid json"
+    "your job is to extract the question and give structured output successfully. Do not attepmt to answer the question. give the valid json"
 )
 
 # A more complex sample text with less neatly formatted options
@@ -97,9 +94,10 @@ try:
     # Parse the content as JSON and validate using Pydantic
     json_string = to_json_string(content)
     logger.info(f"to_json_string -> {json_string}")
-    mcq_data = MCQQuestion.parse_raw(json_string)  # Serialize dict to JSON string
+    mcq_data = MCQQuestion.model_validate_json(json_string)  # Serialize dict to JSON string
+    logger.info(f"mcq_data -> {mcq_data}")
     # Print the validated, structured JSON output
-    output = mcq_data.json(indent=2)
-    logger.info(f"structured_output: {output}")
+    output = mcq_data.model_dump_json(indent=2)
+    logger.info(f"structured_output_json: {output}")
 except Exception as e:
     print(f"Error parsing response: {e}")
