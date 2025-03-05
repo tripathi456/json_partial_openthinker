@@ -10,4 +10,5 @@ dependencies = [
     "openai>=1.65.2",
     "pydantic>=2.10.6",
     "requests>=2.32.3",
+    "rich>=13.9.4",
 ]
