@@ -1,6 +1,7 @@
 from json_partial_py import to_json_string
 from rich.console import Console
 from rich.table import Table
+import json 
 
 # Key not quoted, value not quoted
 MALFORMED_JSON = """
@@ -62,6 +63,12 @@ MALFORMED_JSON12 = """
 {name: "value"}
 """
 
+MALFORMED_JSON13=r"""
+{ rec_one: "and then i said \"hi\", and also \"bye\"", rec_two: "and then i said "hi", and also "bye"", "also_rec_one": ok }
+"""
+
+
+
 malformed_jsons = [
     MALFORMED_JSON,
     MALFORMED_JSON2,
@@ -74,20 +81,35 @@ malformed_jsons = [
     MALFORMED_JSON9,
     MALFORMED_JSON10,
     MALFORMED_JSON11,
-    MALFORMED_JSON12
+    MALFORMED_JSON12,
+    MALFORMED_JSON13
 ]
 
 console = Console()
-table = Table(title="JSON Parsing Test Results", show_header=True, header_style="bold magenta")
-table.add_column("Case #", justify="right")
-table.add_column("Raw Input", style="cyan", no_wrap=True)
-table.add_column("Structured Output", style="green")
+table = Table(
+    title="JSON Parsing Test Results",
+    show_header=True,
+    header_style="bold magenta",
+    show_lines=True  # Add lines between rows
+)
+table.add_column("Case #", justify="right", width=8)
+table.add_column("Raw Input", style="cyan", no_wrap=False, max_width=40)
+table.add_column("Structured Output", style="green", no_wrap=False, max_width=40)
 
 for i, json_string in enumerate(malformed_jsons):
     raw_display = json_string.strip().replace('\n', ' ↵ ')
-    structured_output = to_json_string(json_string).strip()
+    structured_output_raw = to_json_string(json_string).strip()
+      
+    # Pretty-print the structured_output
+    try:
+        # Parse the JSON string and reformat it with indentation
+        structured_output = json.dumps(json.loads(structured_output_raw), indent=2)
+    except json.JSONDecodeError:
+        # Fallback if the JSON is invalid
+        structured_output = structured_output_raw
+    
     table.add_row(
-        str(i+1), 
+        str(i + 1),
         f"{raw_display}",
         f"{structured_output}"
     )
@@ -95,22 +117,64 @@ for i, json_string in enumerate(malformed_jsons):
 console.print(table)
 
 
-
 # ❯ uv run hello.py
-#               JSON Parsing Test Results               
-# ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
-# ┃ Case # ┃ Raw Input           ┃ Structured Output   ┃
-# ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
-# │      1 │ {abhi: shek}        │ {"abhi":"shek"}     │
-# │      2 │ {abhi: "shek"}      │ {"abhi":"shek"}     │
-# │      3 │ {'name': 'value',}  │ {"name":"value"}    │
-# │      4 │ {'name': 'value'    │ {"name":"value"}    │
-# │      5 │ {'name': 'value'',} │ {"name":"value'"}   │
-# │      6 │ {'name': 'value''   │ {"name":"value'"}   │
-# │      7 │ {'name': value'}    │ {"name":"value'"}   │
-# │      8 │ {'name': value'     │ {"name":"value'"}   │
-# │      9 │ {'name': "value"}   │ {"name":"value"}    │
-# │     10 │ {'name': "value'    │ {"name":"value'\n"} │
-# │     11 │ {'name': value}     │ {"name":"value"}    │
-# │     12 │ {name: "value"}     │ {"name":"value"}    │
-# └────────┴─────────────────────┴─────────────────────┘
+#                                     JSON Parsing Test Results                                     
+# ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃   Case # ┃ Raw Input                                ┃ Structured Output                        ┃
+# ┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+# │        1 │ {abhi: shek}                             │ {                                        │
+# │          │                                          │   "abhi": "shek"                         │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        2 │ {abhi: "shek"}                           │ {                                        │
+# │          │                                          │   "abhi": "shek"                         │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        3 │ {'name': 'value',}                       │ {                                        │
+# │          │                                          │   "name": "value"                        │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        4 │ {'name': 'value'                         │ {                                        │
+# │          │                                          │   "name": "value"                        │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        5 │ {'name': 'value'',}                      │ {                                        │
+# │          │                                          │   "name": "value'"                       │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        6 │ {'name': 'value''                        │ {                                        │
+# │          │                                          │   "name": "value'"                       │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        7 │ {'name': value'}                         │ {                                        │
+# │          │                                          │   "name": "value'"                       │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        8 │ {'name': value'                          │ {                                        │
+# │          │                                          │   "name": "value'"                       │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │        9 │ {'name': "value"}                        │ {                                        │
+# │          │                                          │   "name": "value"                        │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │       10 │ {'name': "value'                         │ {                                        │
+# │          │                                          │   "name": "value'\n"                     │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │       11 │ {'name': value}                          │ {                                        │
+# │          │                                          │   "name": "value"                        │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │       12 │ {name: "value"}                          │ {                                        │
+# │          │                                          │   "name": "value"                        │
+# │          │                                          │ }                                        │
+# ├──────────┼──────────────────────────────────────────┼──────────────────────────────────────────┤
+# │       13 │ { rec_one: "and then i said \"hi\", and  │ {                                        │
+# │          │ also \"bye\"", rec_two: "and then i said │   "also_rec_one": "ok",                  │
+# │          │ "hi", and also "bye"", "also_rec_one":   │   "rec_one": "and then i said \"hi\",    │
+# │          │ ok }                                     │ and also \"bye\"",                       │
+# │          │                                          │   "rec_two": "and then i said \"hi\",    │
+# │          │                                          │ and also \"bye\""                        │
+# │          │                                          │ }                                        │
+# └──────────┴──────────────────────────────────────────┴──────────────────────────────────────────┘
